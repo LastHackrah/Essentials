@@ -1,0 +1,76 @@
+dsl_version: 1.2.0
+
+# Validation Policy Example
+# Demonstrates how to use validation_policy to control strictness and suppressions
+
+validation_policy:
+  strictness: relaxed    # Options: "strict", "moderate", "relaxed"
+  suppress_codes:
+    - DQ_QUESTIONABLE_METHOD  # Allow temporal outlier detection without warnings
+
+dashboard:
+  id: validation_policy_demo
+  title: Validation Policy Demo Dashboard
+  metadata:
+    dataset_name: Demo Dataset
+    description: Demonstrates validation policy configuration
+    source: Example
+    rows: 1000
+    currency: USD
+    narrative: "This dashboard demonstrates the validation_policy feature."
+
+  data_source:
+    type: parquet
+    path: data/processed/fraud_detection.parquet
+    schema:
+      amount: float
+      time: integer
+      fraud: integer
+      year: integer     # Temporal field that might trigger warnings
+      month: integer    # Temporal field that might trigger warnings
+
+    data_quality:
+      missing_values:
+        strategy: auto
+        rules: []
+      duplicates:
+        enabled: false
+      outliers:
+        enabled: true
+        rules:
+          # These temporal fields would normally trigger DQ_QUESTIONABLE_METHOD warnings
+          # but are suppressed by validation_policy.suppress_codes
+          - fields: [year, month]
+            method: percentile
+            lower: 1.0
+            upper: 99.0
+            action: cap
+          # This is appropriate and won't trigger warnings
+          - fields: [amount]
+            method: percentile
+            lower: 1.0
+            upper: 99.0
+            action: cap
+      validation:
+        rules: []
+      reporting:
+        log_level: info
+
+  pages:
+    - id: overview
+      title: Overview
+      metrics:
+        - id: total_transactions
+          label: Total Transactions
+          field: amount
+          aggregation: count
+      layout:
+        type: single
+        components:
+          - id: fraud_dist
+            title: Transaction Distribution
+            type: visualization
+            visualization:
+              chart_type: histogram
+              roles:
+                x: amount
