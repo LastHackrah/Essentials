@@ -1,0 +1,30 @@
+[MAIN]
+init-hook='import sys; sys.path.append(".")'
+ignore=.venv,venv,data,build,dist
+jobs=0
+
+[MESSAGES CONTROL]
+disable=
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    too-few-public-methods,
+    too-many-arguments,
+    too-many-locals,
+    too-many-branches,
+    too-many-statements,
+    too-many-instance-attributes,
+    fixme,
+    invalid-name
+
+[FORMAT]
+max-line-length=100
+indent-string='    '
+
+[DESIGN]
+max-args=7
+max-attributes=10
+max-locals=20
+
+[SIMILARITIES]
+min-similarity-lines=10

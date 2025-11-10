@@ -1,0 +1,68 @@
+[tool.black]
+line-length = 100
+target-version = ['py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.git
+  | \.venv
+  | venv
+  | build
+  | dist
+  | data
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip_gitignore = true
+skip = [".venv", "venv", "build", "dist", "data"]
+known_first_party = ["etl", "dsl", "config"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "kaggle.*",
+    "plotly.*",
+    "streamlit.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --tb=short --cov=. --cov-report=term-missing --cov-report=html"
+
+[tool.coverage.run]
+omit = [
+    "*/tests/*",
+    "*/.venv/*",
+    "*/venv/*",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]

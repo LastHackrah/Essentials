@@ -1,0 +1,27 @@
+# Development Dependencies
+# Install with: pip install -r requirements-dev.txt
+
+# Include production requirements
+-r requirements.txt
+
+# Code Quality & Linting
+black>=24.0.0
+flake8>=7.0.0
+isort>=5.13.0
+mypy>=1.8.0
+pylint>=3.0.0
+
+# Testing
+pytest>=8.0.0
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0
+
+# Development Tools
+watchdog>=3.0.0
+ipython>=8.20.0
+ipdb>=0.13.13
+
+# Type Stubs
+pandas-stubs>=2.0.0
+types-pyyaml>=6.0.0
+types-requests>=2.31.0
