@@ -1,0 +1,141 @@
+# Happy Path DashSpec Example
+# Credit Card Fraud Detection Dashboard
+
+dsl_version: "1.0.0"
+
+dashboard:
+  data_source:
+    path: "data/processed/credit_card_fraud.parquet"
+    schema:
+      amount: "float"
+      class: "integer"
+      time: "float"
+    type: "parquet"
+  description: "Interactive dashboard for analyzing credit card fraud patterns and trends"
+  id: "fraud_detection_dashboard"
+  pages:
+    - description: "High-level overview of fraud detection metrics"
+      filters:
+        - default: [0, 500]
+          field: "amount"
+          id: "amount_filter"
+          label: "Transaction Amount Range"
+          type: "range"
+        - default: 1
+          field: "class"
+          id: "fraud_filter"
+          label: "Transaction Type"
+          type: "select"
+      id: "overview"
+      layout:
+        components:
+          - id: "total_transactions"
+            metric_id: "total_count"
+            title: "Total Transactions"
+            type: "metric_card"
+            width: "third"
+          - id: "fraud_transactions"
+            metric_id: "fraud_count"
+            title: "Fraudulent Transactions"
+            type: "metric_card"
+            width: "third"
+          - id: "fraud_rate"
+            metric_id: "fraud_percentage"
+            title: "Fraud Rate"
+            type: "metric_card"
+            width: "third"
+          - id: "amount_distribution"
+            title: "Transaction Amount Distribution"
+            type: "visualization"
+            visualization:
+              aggregation: "count"
+              chart_type: "histogram"
+              limit: 1000
+              x_field: "amount"
+            width: "half"
+          - id: "fraud_by_amount"
+            title: "Fraud Cases by Amount"
+            type: "visualization"
+            visualization:
+              aggregation: "count"
+              chart_type: "scatter"
+              color_field: "class"
+              limit: 5000
+              x_field: "time"
+              y_field: "amount"
+            width: "half"
+          - id: "fraud_summary"
+            title: "Fraud Detection Summary"
+            type: "visualization"
+            visualization:
+              chart_type: "table"
+              limit: 100
+              sort:
+                field: "amount"
+                order: "desc"
+            width: "full"
+        type: "grid"
+      metrics:
+        - aggregation: "count"
+          field: "time"
+          format: ",.0f"
+          id: "total_count"
+          label: "Total Transactions"
+        - aggregation: "count"
+          field: "class"
+          filter:
+            field: "class"
+            operator: "eq"
+            value: 1
+          format: ",.0f"
+          id: "fraud_count"
+          label: "Fraud Count"
+        - aggregation: "mean"
+          field: "class"
+          format: ".2%"
+          id: "fraud_percentage"
+          label: "Fraud Rate"
+        - aggregation: "mean"
+          field: "amount"
+          format: "$,.2f"
+          id: "avg_amount"
+          label: "Average Amount"
+      title: "Fraud Overview"
+    - description: "Detailed analysis of transaction patterns"
+      id: "analysis"
+      layout:
+        components:
+          - id: "time_series"
+            title: "Transactions Over Time"
+            type: "visualization"
+            visualization:
+              aggregation: "count"
+              chart_type: "line"
+              color_field: "class"
+              group_by:
+                - "class"
+              x_field: "time"
+              y_field: "amount"
+            width: "full"
+          - id: "amount_box"
+            title: "Amount Distribution by Class"
+            type: "visualization"
+            visualization:
+              chart_type: "box"
+              color_field: "class"
+              x_field: "class"
+              y_field: "amount"
+            width: "half"
+          - id: "fraud_pie"
+            title: "Fraud vs Normal Transactions"
+            type: "visualization"
+            visualization:
+              aggregation: "count"
+              chart_type: "pie"
+              x_field: "class"
+              y_field: "amount"
+            width: "half"
+        type: "grid"
+      metrics: []
+      title: "Detailed Analysis"
+  title: "Credit Card Fraud Detection"

@@ -1,0 +1,365 @@
+dsl_version: 1.3.0
+dashboard:
+  id: fraud_detection_advanced
+  title: Credit Card Fraud Detection - Advanced Analytics
+  description: Comprehensive fraud detection dashboard using DashSpec v1.1 with role-based visualizations and advanced chart types
+  metadata:
+    dataset_name: Credit Card Fraud Detection
+    source: ULB Machine Learning Group
+    rows: 283726
+    description: Credit card transactions with PCA-transformed features for fraud detection
+    use_cases:
+    - Detect fraudulent transactions
+    - Analyze fraud patterns
+    - Feature engineering insights
+    - Risk assessment
+    currency: USD
+    narrative: 'The Credit Card Fraud Detection contains 283,726 records from ULB Machine Learning Group.
+
+      Credit card transactions with PCA-transformed features for fraud detection
+
+
+      This dataset enables comprehensive analysis of key patterns and trends.
+
+      The dashboard provides interactive visualizations and metrics for data exploration,
+
+      allowing users to filter, aggregate, and discover insights across multiple dimensions.'
+  data_source:
+    type: parquet
+    path: data/processed/credit_card_fraud.parquet
+    schema:
+      amount: float
+      class: integer
+      time: float
+    default_formatting:
+      use_thousands_separator: true
+    formatting:
+      amount:
+        type: currency
+        precision: 2
+      class:
+        type: integer
+      time:
+        type: number
+        precision: 2
+    column_labels:
+      amount: Amount
+      class: Class
+      time: Time
+    data_quality:
+      missing_values:
+        strategy: auto
+        rules: []
+      duplicates:
+        enabled: false
+      outliers:
+        enabled: true
+        rules:
+        - fields:
+          - amount
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - class
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - time
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+      validation:
+        rules: []
+      reporting:
+        log_level: info
+        show_summary: true
+        show_details: false
+  pages:
+  - id: overview
+    title: Executive Overview
+    description: High-level fraud detection metrics and key performance indicators
+    filters:
+    - id: amount_filter
+      field: amount
+      type: range
+      label: Transaction Amount Range ($)
+      default:
+      - 0
+      - 1000
+    - id: fraud_type
+      field: class
+      type: select
+      label: Transaction Type
+      default: 1
+    metrics:
+    - id: total_count
+      field: time
+      aggregation: count
+      label: Total Transactions
+      format: ',.0f'
+    - id: fraud_count
+      field: class
+      aggregation: count
+      filter:
+        field: class
+        operator: eq
+        value: 1
+      label: Fraudulent Transactions
+      format: ',.0f'
+    - id: fraud_rate
+      field: class
+      aggregation: mean
+      label: Fraud Rate
+      format: .2%
+    - id: avg_fraud_amount
+      field: amount
+      aggregation: mean
+      filter:
+        field: class
+        operator: eq
+        value: 1
+      label: Avg Fraud Amount
+      format: $,.2f
+    layout:
+      type: grid
+      components:
+      - id: summary_stats
+        type: visualization
+        title: Transaction Summary Statistics
+        width: full
+        visualization:
+          chart_type: summary
+          params:
+            columns:
+            - amount
+            - time
+            - v1
+            - v2
+            - v3
+            by: class
+            percentiles:
+            - 10
+            - 25
+            - 50
+            - 75
+            - 90
+            - 95
+            - 99
+      - id: amount_histogram
+        type: visualization
+        title: Transaction Amount Distribution
+        width: full
+        visualization:
+          chart_type: histogram
+          roles:
+            x: amount
+            by: class
+          params:
+            bins: 50
+            log_x: true
+            limit: 10000
+      - id: amount_ecdf
+        type: visualization
+        title: Cumulative Distribution (ECDF)
+        width: full
+        visualization:
+          chart_type: ecdf
+          roles:
+            x: amount
+            by: class
+          params:
+            log_x: true
+      - id: amount_violin
+        type: visualization
+        title: Amount Distribution by Transaction Type
+        width: full
+        visualization:
+          chart_type: violin
+          roles:
+            y: amount
+            by: class
+          params:
+            inner: box
+            log_y: true
+      - id: amount_boxplot
+        type: visualization
+        title: Amount Statistics by Class
+        width: full
+        visualization:
+          chart_type: boxplot
+          roles:
+            y: amount
+            by: class
+          params:
+            log_y: true
+  - id: patterns
+    title: Pattern Analysis
+    description: Explore relationships and patterns in fraud detection features
+    layout:
+      type: grid
+      components:
+      - id: v1_v2_scatter
+        type: visualization
+        title: 'Feature Correlation: V1 vs V2'
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: v1
+            y: v2
+            color: class
+            size: amount
+          params:
+            trendline: ols
+            alpha: 0.6
+            limit: 5000
+      - id: v1_v2_hexbin
+        type: visualization
+        title: Feature Density Heatmap (V1 vs V2)
+        width: full
+        visualization:
+          chart_type: hexbin
+          roles:
+            x: v1
+            y: v2
+          params:
+            bins: 40
+            limit: 20000
+      - id: v3_v4_kde2d
+        type: visualization
+        title: '2D Kernel Density: V3 vs V4'
+        width: full
+        visualization:
+          chart_type: kde2d
+          roles:
+            x: v3
+            y: v4
+          params:
+            limit: 10000
+      - id: time_amount_scatter
+        type: visualization
+        title: Transactions Over Time
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: time
+            y: amount
+            color: class
+          params:
+            alpha: 0.5
+            limit: 10000
+      - id: feature_correlation
+        type: visualization
+        title: Feature Correlation Matrix
+        width: full
+        visualization:
+          chart_type: corr_heatmap
+          params:
+            columns:
+            - v1
+            - v2
+            - v3
+            - v4
+            - v5
+            - v6
+            - v7
+            - v8
+            - amount
+            - time
+            method: pearson
+            mask_upper: true
+  - id: distributions
+    title: Feature Distributions
+    description: Detailed distribution analysis of fraud detection features
+    layout:
+      type: grid
+      components:
+      - id: v1_dist
+        type: visualization
+        title: V1 Distribution
+        width: full
+        visualization:
+          chart_type: kde
+          roles:
+            x: v1
+            by: class
+          params:
+            bandwidth: 0.5
+      - id: v2_dist
+        type: visualization
+        title: V2 Distribution
+        width: full
+        visualization:
+          chart_type: kde
+          roles:
+            x: v2
+            by: class
+      - id: v1_ecdf
+        type: visualization
+        title: V1 Cumulative Distribution
+        width: full
+        visualization:
+          chart_type: ecdf
+          roles:
+            x: v1
+            by: class
+      - id: v2_violin
+        type: visualization
+        title: V2 Distribution (Violin Plot)
+        width: full
+        visualization:
+          chart_type: violin
+          roles:
+            y: v2
+            by: class
+          params:
+            inner: quartiles
+      - id: feature_boxplots
+        type: visualization
+        title: Multi-Feature Comparison
+        width: full
+        visualization:
+          chart_type: boxplot
+          roles:
+            y: v1
+            by: class
+  - id: detailed_data
+    title: Transaction Details
+    description: Detailed transaction data and high-risk cases
+    layout:
+      type: grid
+      components:
+      - id: class_breakdown
+        type: visualization
+        title: Transaction Type Distribution
+        width: third
+        visualization:
+          chart_type: pie
+          roles:
+            x: class
+      - id: high_value_table
+        type: visualization
+        title: High-Value Fraudulent Transactions
+        width: full
+        visualization:
+          chart_type: table
+          params:
+            columns:
+            - time
+            - amount
+            - class
+            - v1
+            - v2
+            - v3
+            - v4
+            - v5
+            limit: 100
+          sort:
+            field: amount
+            order: desc

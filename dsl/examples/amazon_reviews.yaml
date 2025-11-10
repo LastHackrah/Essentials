@@ -1,0 +1,448 @@
+dsl_version: 1.3.0
+dashboard:
+  id: amazon_food_reviews
+  title: Amazon Fine Food Reviews Analytics
+  description: 'Comprehensive analysis of 568K+ Amazon food reviews: ratings, helpfulness, and customer sentiment patterns'
+  metadata:
+    dataset_name: Amazon Fine Food Reviews
+    source: Amazon.com (via Stanford SNAP)
+    rows: 568454
+    description: Customer reviews of fine foods from Amazon spanning over 10 years with ratings, helpfulness votes, and review text
+    use_cases:
+    - Sentiment analysis and rating prediction
+    - Review helpfulness modeling
+    - Product quality insights
+    - Customer behavior patterns
+    currency: USD
+    narrative: 'The Amazon Fine Food Reviews contains 568,454 records from Amazon.com (via Stanford SNAP).
+
+      Customer reviews of fine foods from Amazon spanning over 10 years with ratings, helpfulness votes, and review text
+
+
+      This dataset enables comprehensive analysis of key patterns and trends.
+
+      The dashboard provides interactive visualizations and metrics for data exploration,
+
+      allowing users to filter, aggregate, and discover insights across multiple dimensions.'
+  data_source:
+    type: parquet
+    path: data/processed/amazon_food_reviews.parquet
+    schema:
+      score: integer
+      helpfulnessnumerator: integer
+      helpfulnessdenominator: integer
+      time: integer
+    default_formatting:
+      type: integer
+      use_thousands_separator: true
+    column_labels:
+      score: Score
+      helpfulnessnumerator: Helpfulnessnumerator
+      helpfulnessdenominator: Helpfulnessdenominator
+      time: Time
+    data_quality:
+      missing_values:
+        strategy: auto
+        rules: []
+      duplicates:
+        enabled: false
+      outliers:
+        enabled: true
+        rules:
+        - fields:
+          - score
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - helpfulnessnumerator
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - helpfulnessdenominator
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - time
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+      validation:
+        rules: []
+      reporting:
+        log_level: info
+        show_summary: true
+        show_details: false
+  pages:
+  - id: overview
+    title: Review Overview
+    description: Key metrics and rating distribution across all food reviews
+    filters:
+    - id: score_filter
+      field: score
+      type: multiselect
+      label: Rating Score
+      default:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+    - id: helpfulness_filter
+      field: helpfulnessnumerator
+      type: range
+      label: Helpfulness Votes
+      default:
+      - 0
+      - 100
+    metrics:
+    - id: total_reviews
+      field: id
+      aggregation: count
+      label: Total Reviews
+      format: ',.0f'
+    - id: avg_score
+      field: score
+      aggregation: mean
+      label: Average Rating
+      format: .2f
+    - id: five_star_pct
+      field: score
+      aggregation: count
+      filter:
+        field: score
+        operator: eq
+        value: 5
+      label: 5-Star Reviews
+      format: ',.0f'
+    - id: avg_helpfulness
+      field: helpfulnessnumerator
+      aggregation: mean
+      label: Avg Helpfulness
+      format: .2f
+    layout:
+      type: grid
+      components:
+      - id: review_summary
+        type: visualization
+        title: Review Statistics by Rating
+        width: full
+        visualization:
+          chart_type: summary
+          params:
+            columns:
+            - helpfulnessnumerator
+            - helpfulnessdenominator
+            - time
+            by: score
+            percentiles:
+            - 25
+            - 50
+            - 75
+            - 90
+            - 95
+      - id: score_histogram
+        type: visualization
+        title: Rating Score Distribution
+        width: full
+        visualization:
+          chart_type: histogram
+          roles:
+            x: score
+          params:
+            bins: 5
+            limit: 100000
+      - id: score_ecdf
+        type: visualization
+        title: Cumulative Rating Distribution
+        width: full
+        visualization:
+          chart_type: ecdf
+          roles:
+            x: score
+      - id: helpfulness_violin
+        type: visualization
+        title: Helpfulness Votes by Rating
+        width: full
+        visualization:
+          chart_type: violin
+          roles:
+            y: helpfulnessnumerator
+            by: score
+          params:
+            inner: box
+            log_y: true
+            limit: 50000
+      - id: helpfulness_box
+        type: visualization
+        title: Helpfulness Statistics by Rating
+        width: full
+        visualization:
+          chart_type: boxplot
+          roles:
+            y: helpfulnessnumerator
+            by: score
+          params:
+            log_y: true
+            limit: 50000
+      - id: rating_pie
+        type: visualization
+        title: Rating Distribution
+        width: third
+        visualization:
+          chart_type: pie
+          roles:
+            x: score
+          params:
+            limit: 100000
+  - id: helpfulness_analysis
+    title: Review Helpfulness
+    description: Analyze what makes reviews helpful to customers
+    layout:
+      type: grid
+      components:
+      - id: helpfulness_rating_scatter
+        type: visualization
+        title: Helpfulness vs Rating
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: score
+            y: helpfulnessnumerator
+            color: score
+          params:
+            alpha: 0.5
+            limit: 10000
+            log_y: true
+      - id: helpfulness_hexbin
+        type: visualization
+        title: Helpfulness Density Map
+        width: full
+        visualization:
+          chart_type: hexbin
+          roles:
+            x: helpfulnessnumerator
+            y: helpfulnessdenominator
+          params:
+            bins: 40
+            limit: 50000
+            log_x: true
+            log_y: true
+      - id: helpfulness_num_kde
+        type: visualization
+        title: Helpful Votes Distribution
+        width: full
+        visualization:
+          chart_type: kde
+          roles:
+            x: helpfulnessnumerator
+            by: score
+          params:
+            limit: 50000
+      - id: helpfulness_ecdf
+        type: visualization
+        title: Helpfulness Cumulative Distribution
+        width: full
+        visualization:
+          chart_type: ecdf
+          roles:
+            x: helpfulnessnumerator
+            by: score
+          params:
+            limit: 50000
+      - id: helpfulness_kde2d
+        type: visualization
+        title: Helpfulness 2D Distribution
+        width: full
+        visualization:
+          chart_type: kde2d
+          roles:
+            x: helpfulnessnumerator
+            y: helpfulnessdenominator
+          params:
+            limit: 30000
+  - id: temporal_patterns
+    title: Temporal Trends
+    description: Review patterns and rating trends over time
+    layout:
+      type: grid
+      components:
+      - id: time_score_scatter
+        type: visualization
+        title: Reviews Over Time
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: time
+            y: score
+            color: score
+          params:
+            alpha: 0.3
+            limit: 20000
+      - id: time_histogram
+        type: visualization
+        title: Review Volume Over Time
+        width: full
+        visualization:
+          chart_type: histogram
+          roles:
+            x: time
+            by: score
+          params:
+            bins: 50
+            limit: 100000
+      - id: time_helpfulness_scatter
+        type: visualization
+        title: Review Helpfulness Over Time
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: time
+            y: helpfulnessnumerator
+            color: score
+          params:
+            alpha: 0.4
+            limit: 10000
+            log_y: true
+      - id: time_helpfulness_hexbin
+        type: visualization
+        title: Review Density Over Time
+        width: full
+        visualization:
+          chart_type: hexbin
+          roles:
+            x: time
+            y: helpfulnessnumerator
+          params:
+            bins: 50
+            limit: 50000
+  - id: quality_insights
+    title: Quality Insights
+    description: Deep dive into review quality and patterns
+    layout:
+      type: grid
+      components:
+      - id: metrics_correlation
+        type: visualization
+        title: Review Metrics Correlation
+        width: full
+        visualization:
+          chart_type: corr_heatmap
+          params:
+            columns:
+            - score
+            - helpfulnessnumerator
+            - helpfulnessdenominator
+            - time
+            method: spearman
+            mask_upper: true
+      - id: low_rating_violin
+        type: visualization
+        title: Low Rating Helpfulness Pattern
+        width: full
+        visualization:
+          chart_type: violin
+          roles:
+            y: helpfulnessnumerator
+            by: score
+          params:
+            inner: quartiles
+            limit: 30000
+      - id: high_helpfulness_box
+        type: visualization
+        title: Highly Helpful Reviews by Rating
+        width: full
+        visualization:
+          chart_type: boxplot
+          roles:
+            y: helpfulnessdenominator
+            by: score
+          params:
+            limit: 30000
+      - id: helpfulness_ratio_kde
+        type: visualization
+        title: Helpfulness Ratio Distribution
+        width: full
+        visualization:
+          chart_type: kde
+          roles:
+            x: helpfulnessnumerator
+            by: score
+          params:
+            limit: 50000
+      - id: score_detail_box
+        type: visualization
+        title: Detailed Rating Analysis
+        width: full
+        visualization:
+          chart_type: boxplot
+          roles:
+            y: helpfulnessnumerator
+            by: score
+          params:
+            limit: 50000
+  - id: review_explorer
+    title: Review Explorer
+    description: Browse and explore individual reviews
+    layout:
+      type: grid
+      components:
+      - id: most_helpful_reviews
+        type: visualization
+        title: Most Helpful Reviews
+        width: full
+        visualization:
+          chart_type: table
+          params:
+            columns:
+            - score
+            - summary
+            - helpfulnessnumerator
+            - helpfulnessdenominator
+            - profilename
+            limit: 100
+          sort:
+            field: helpfulnessnumerator
+            order: desc
+      - id: recent_five_star
+        type: visualization
+        title: Recent 5-Star Reviews
+        width: full
+        visualization:
+          chart_type: table
+          params:
+            columns:
+            - summary
+            - helpfulnessnumerator
+            - time
+            - profilename
+            limit: 50
+          sort:
+            field: time
+            order: desc
+      - id: critical_reviews
+        type: visualization
+        title: Critical Reviews (Sorted by Helpfulness)
+        width: full
+        visualization:
+          chart_type: table
+          params:
+            columns:
+            - score
+            - summary
+            - helpfulnessnumerator
+            - time
+            - profilename
+            limit: 50
+          sort:
+            field: helpfulnessnumerator
+            order: desc

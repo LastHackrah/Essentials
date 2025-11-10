@@ -1,0 +1,21 @@
+# Minimal valid DashSpec example
+# The smallest possible valid dashboard specification
+
+dsl_version: "1.0.0"
+
+dashboard:
+  data_source:
+    path: "data/processed/credit_card_fraud.parquet"
+    type: "parquet"
+  id: "minimal_dashboard"
+  pages:
+    - id: "main"
+      layout:
+        components:
+          - id: "simple_table"
+            type: "visualization"
+            visualization:
+              chart_type: "table"
+        type: "single"
+      title: "Main Page"
+  title: "Minimal Dashboard"

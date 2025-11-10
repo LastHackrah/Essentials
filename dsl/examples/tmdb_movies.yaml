@@ -1,0 +1,364 @@
+dsl_version: 1.3.0
+dashboard:
+  id: tmdb_movies_analysis
+  title: TMDB Movie Analytics & Box Office Insights
+  description: 'Explore 5000 movies: budget vs revenue, genre trends, and factors
+    driving box office success'
+  metadata:
+    dataset_name: TMDB 5000 Movie Dataset
+    source: The Movie Database (TMDB)
+    rows: 4803
+    description: Movie metadata including budget, revenue, genres, cast, and crew
+      information
+    use_cases:
+    - Predict box office revenue
+    - Analyze genre profitability
+    - Identify success factors
+    - Cast and director impact analysis
+    currency: USD
+    narrative: 'The TMDB 5000 Movie Dataset contains 4,803 records from The Movie
+      Database (TMDB).
+
+      Movie metadata including budget, revenue, genres, cast, and crew information
+
+
+      This dataset enables comprehensive analysis of key patterns and trends.
+
+      The dashboard provides interactive visualizations and metrics for data exploration,
+
+      allowing users to filter, aggregate, and discover insights across multiple dimensions.'
+  data_source:
+    type: parquet
+    path: data/processed/tmdb_movies_tmdb_5000_movies.parquet
+    schema:
+      budget: integer
+      revenue: integer
+      popularity: float
+      vote_average: float
+      runtime: float
+    default_formatting:
+      type: number
+      precision: 2
+      use_thousands_separator: true
+    formatting:
+      budget:
+        type: integer
+      revenue:
+        type: currency
+    column_labels:
+      budget: Budget
+      revenue: Revenue
+      popularity: Popularity
+      vote_average: Vote Average
+      runtime: Runtime
+    data_quality:
+      missing_values:
+        strategy: auto
+        rules: []
+      duplicates:
+        enabled: false
+      outliers:
+        enabled: true
+        rules:
+        - fields:
+          - budget
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - revenue
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - popularity
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - vote_average
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - runtime
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+      validation:
+        rules: []
+      reporting:
+        log_level: info
+        show_summary: true
+        show_details: false
+  pages:
+  - id: overview
+    title: Box Office Overview
+    description: Revenue, budget, and profitability analysis
+    filters:
+    - id: budget_filter
+      field: budget
+      type: range
+      label: Budget Range ($M)
+      default:
+      - 1000000
+      - 100000000
+    - id: rating_filter
+      field: vote_average
+      type: range
+      label: Rating (1-10)
+      default:
+      - 5.0
+      - 10.0
+    metrics:
+    - id: total_movies
+      field: id
+      aggregation: count
+      label: Total Movies
+      format: ',.0f'
+    - id: avg_revenue
+      field: revenue
+      aggregation: mean
+      label: Avg Revenue
+      format: $,.0f
+    - id: avg_budget
+      field: budget
+      aggregation: mean
+      label: Avg Budget
+      format: $,.0f
+    - id: avg_rating
+      field: vote_average
+      aggregation: mean
+      label: Avg Rating
+      format: .2f
+    layout:
+      type: grid
+      components:
+      - id: movie_summary
+        type: visualization
+        title: Movie Statistics Summary
+        width: full
+        visualization:
+          chart_type: summary
+          params:
+            columns:
+            - budget
+            - revenue
+            - popularity
+            - vote_average
+            - runtime
+            - vote_count
+            percentiles:
+            - 25
+            - 50
+            - 75
+            - 90
+            - 95
+      - id: budget_revenue_scatter
+        type: visualization
+        title: Budget vs Revenue
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: budget
+            y: revenue
+            color: vote_average
+            size: popularity
+          params:
+            trendline: ols
+            alpha: 0.6
+            log_x: true
+            log_y: true
+      - id: budget_revenue_hexbin
+        type: visualization
+        title: Budget-Revenue Density
+        width: full
+        visualization:
+          chart_type: hexbin
+          roles:
+            x: budget
+            y: revenue
+          params:
+            bins: 40
+            log_x: true
+            log_y: true
+      - id: revenue_distribution
+        type: visualization
+        title: Revenue Distribution
+        width: full
+        visualization:
+          chart_type: histogram
+          roles:
+            x: revenue
+          params:
+            bins: 50
+            log_x: true
+      - id: revenue_ecdf
+        type: visualization
+        title: Revenue Cumulative Distribution
+        width: full
+        visualization:
+          chart_type: ecdf
+          roles:
+            x: revenue
+          params:
+            log_x: true
+  - id: ratings_popularity
+    title: Ratings & Popularity
+    description: Audience reception and popularity metrics
+    layout:
+      type: grid
+      components:
+      - id: rating_distribution
+        type: visualization
+        title: Rating Distribution
+        width: full
+        visualization:
+          chart_type: histogram
+          roles:
+            x: vote_average
+          params:
+            bins: 40
+      - id: rating_kde
+        type: visualization
+        title: Rating Kernel Density
+        width: full
+        visualization:
+          chart_type: kde
+          roles:
+            x: vote_average
+      - id: popularity_revenue_scatter
+        type: visualization
+        title: Popularity vs Revenue
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: popularity
+            y: revenue
+            color: vote_average
+          params:
+            alpha: 0.5
+            log_y: true
+      - id: rating_revenue_hexbin
+        type: visualization
+        title: Rating vs Revenue Density
+        width: full
+        visualization:
+          chart_type: hexbin
+          roles:
+            x: vote_average
+            y: revenue
+          params:
+            bins: 30
+            log_y: true
+      - id: movie_correlations
+        type: visualization
+        title: Movie Metrics Correlation Matrix
+        width: full
+        visualization:
+          chart_type: corr_heatmap
+          params:
+            columns:
+            - budget
+            - revenue
+            - popularity
+            - vote_average
+            - vote_count
+            - runtime
+            method: pearson
+            mask_upper: true
+  - id: production
+    title: Production Analysis
+    description: Runtime, language, and production patterns
+    layout:
+      type: grid
+      components:
+      - id: runtime_distribution
+        type: visualization
+        title: Runtime Distribution
+        width: full
+        visualization:
+          chart_type: violin
+          roles:
+            y: runtime
+          params:
+            inner: box
+      - id: runtime_revenue_scatter
+        type: visualization
+        title: Runtime vs Revenue
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: runtime
+            y: revenue
+            color: vote_average
+          params:
+            alpha: 0.5
+            log_y: true
+      - id: language_distribution
+        type: visualization
+        title: Original Language Distribution
+        width: third
+        visualization:
+          chart_type: pie
+          roles:
+            x: original_language
+      - id: status_distribution
+        type: visualization
+        title: Production Status
+        width: third
+        visualization:
+          chart_type: pie
+          roles:
+            x: status
+  - id: top_movies
+    title: Top Performers
+    description: Highest grossing and best rated movies
+    layout:
+      type: grid
+      components:
+      - id: top_revenue_movies
+        type: visualization
+        title: Highest Grossing Movies
+        width: full
+        visualization:
+          chart_type: table
+          params:
+            columns:
+            - title
+            - budget
+            - revenue
+            - vote_average
+            - popularity
+            - runtime
+            - original_language
+            limit: 50
+          sort:
+            field: revenue
+            order: desc
+      - id: top_rated_movies
+        type: visualization
+        title: Highest Rated Movies (Min 100 Votes)
+        width: full
+        visualization:
+          chart_type: table
+          params:
+            columns:
+            - title
+            - vote_average
+            - vote_count
+            - revenue
+            - budget
+            - popularity
+            limit: 50
+          sort:
+            field: vote_average
+            order: desc

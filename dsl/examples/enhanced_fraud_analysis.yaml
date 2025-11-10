@@ -1,0 +1,159 @@
+# Enhanced Fraud Analysis Dashboard
+# Demonstrates DashSpec v1.1 features with role-based visualization specs
+
+dsl_version: "1.1.0"
+
+dashboard:
+  id: "enhanced_fraud_analysis"
+  title: "Enhanced Credit Card Fraud Analysis"
+  description: "Advanced fraud detection dashboard using DashSpec v1.1 role-based specifications"
+
+  data_source:
+    type: "parquet"
+    path: "data/processed/credit_card_fraud.parquet"
+    schema:
+      amount: "float"
+      class: "integer"
+      time: "float"
+
+  pages:
+    - id: "distributions"
+      title: "Distribution Analysis"
+      description: "Explore data distributions using enhanced visualization types"
+
+      filters:
+        - id: "class_filter"
+          field: "class"
+          type: "select"
+          label: "Transaction Type"
+          default: 1
+
+      layout:
+        type: "grid"
+        components:
+          # Enhanced histogram with role-based spec
+          - id: "amount_histogram"
+            type: "visualization"
+            title: "Transaction Amount Distribution"
+            width: "half"
+            visualization:
+              chart_type: "histogram"
+              roles:
+                x: "amount"
+                by: "class"
+              params:
+                bins: 50
+                log_x: true
+
+          # ECDF plot (new in v1.1)
+          - id: "amount_ecdf"
+            type: "visualization"
+            title: "Cumulative Distribution (ECDF)"
+            width: "half"
+            visualization:
+              chart_type: "ecdf"
+              roles:
+                x: "amount"
+                by: "class"
+
+          # Enhanced box plot
+          - id: "amount_boxplot"
+            type: "visualization"
+            title: "Amount by Class (Box Plot)"
+            width: "half"
+            visualization:
+              chart_type: "boxplot"
+              roles:
+                y: "amount"
+                by: "class"
+
+          # Violin plot (new in v1.1)
+          - id: "amount_violin"
+            type: "visualization"
+            title: "Amount Distribution (Violin)"
+            width: "half"
+            visualization:
+              chart_type: "violin"
+              roles:
+                y: "amount"
+                by: "class"
+              params:
+                inner: "box"
+
+    - id: "relationships"
+      title: "Relationship Analysis"
+      description: "Explore relationships between variables"
+
+      layout:
+        type: "grid"
+        components:
+          # Enhanced scatter with trendline
+          - id: "v1_v2_scatter"
+            type: "visualization"
+            title: "V1 vs V2 with Trendline"
+            width: "half"
+            visualization:
+              chart_type: "scatter"
+              roles:
+                x: "v1"
+                y: "v2"
+                color: "class"
+              params:
+                trendline: "ols"
+                alpha: 0.6
+                limit: 5000
+
+          # Hexbin for dense data
+          - id: "v1_v2_hexbin"
+            type: "visualization"
+            title: "V1 vs V2 Density (Hexbin)"
+            width: "half"
+            visualization:
+              chart_type: "hexbin"
+              roles:
+                x: "v1"
+                y: "v2"
+              params:
+                bins: 30
+
+          # Correlation heatmap (enhanced)
+          - id: "feature_correlation"
+            type: "visualization"
+            title: "Feature Correlations"
+            width: "full"
+            visualization:
+              chart_type: "corr_heatmap"
+              params:
+                columns: ["v1", "v2", "v3", "v4", "v5", "amount"]
+                method: "pearson"
+                mask_upper: true
+
+    - id: "summaries"
+      title: "Data Summaries"
+      description: "Summary statistics and data tables"
+
+      layout:
+        type: "grid"
+        components:
+          # Summary statistics (new in v1.1)
+          - id: "fraud_summary"
+            type: "visualization"
+            title: "Summary Statistics by Class"
+            width: "full"
+            visualization:
+              chart_type: "summary"
+              params:
+                columns: ["amount", "v1", "v2", "v3"]
+                by: "class"
+                percentiles: [10, 25, 50, 75, 90]
+
+          # Enhanced table with column selection
+          - id: "fraud_transactions"
+            type: "visualization"
+            title: "Fraudulent Transactions"
+            width: "full"
+            visualization:
+              chart_type: "table"
+              params:
+                columns: ["time", "amount", "class", "v1", "v2"]
+                limit: 100

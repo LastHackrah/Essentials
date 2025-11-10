@@ -1,0 +1,505 @@
+dsl_version: 1.3.0
+dashboard:
+  id: spotify_tracks_analysis
+  title: Spotify Music Analytics Dashboard
+  description: Explore audio features, popularity trends, and genre characteristics across 114K+ Spotify tracks
+  metadata:
+    dataset_name: Spotify Tracks Dataset
+    source: Spotify API
+    rows: 114000
+    description: 114K tracks across 114 genres with audio features like danceability, energy, and valence
+    use_cases:
+    - Music recommendation systems
+    - Genre analysis and classification
+    - Popularity prediction
+    - Audio feature exploration
+    currency: USD
+    narrative: 'The Spotify Tracks Dataset contains 114,000 records from Spotify API.
+
+      114K tracks across 114 genres with audio features like danceability, energy, and valence
+
+
+      This dataset enables comprehensive analysis of key patterns and trends.
+
+      The dashboard provides interactive visualizations and metrics for data exploration,
+
+      allowing users to filter, aggregate, and discover insights across multiple dimensions.'
+  data_source:
+    type: parquet
+    path: data/processed/spotify_tracks.parquet
+    schema:
+      popularity: integer
+      danceability: float
+      energy: float
+      loudness: float
+      tempo: float
+      valence: float
+    default_formatting:
+      type: number
+      precision: 2
+      use_thousands_separator: true
+    formatting:
+      popularity:
+        type: integer
+    column_labels:
+      popularity: Popularity
+      danceability: Danceability
+      energy: Energy
+      loudness: Loudness
+      tempo: Tempo
+      valence: Valence
+    data_quality:
+      missing_values:
+        strategy: auto
+        rules: []
+      duplicates:
+        enabled: false
+      outliers:
+        enabled: true
+        rules:
+        - fields:
+          - popularity
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - danceability
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - energy
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - loudness
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - tempo
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - valence
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+      validation:
+        rules: []
+      reporting:
+        log_level: info
+        show_summary: true
+        show_details: false
+  pages:
+  - id: overview
+    title: Music Overview
+    description: High-level audio feature statistics and track characteristics
+    filters:
+    - id: popularity_filter
+      field: popularity
+      type: range
+      label: Popularity Score
+      default:
+      - 0
+      - 100
+    - id: genre_filter
+      field: track_genre
+      type: multiselect
+      label: Select Genres
+      default:
+      - pop
+      - rock
+      - hip-hop
+      - electronic
+      - indie
+    - id: explicit_filter
+      field: explicit
+      type: select
+      label: Explicit Content
+      default: 0
+    metrics:
+    - id: total_tracks
+      field: track_id
+      aggregation: count
+      label: Total Tracks
+      format: ',.0f'
+    - id: avg_popularity
+      field: popularity
+      aggregation: mean
+      label: Avg Popularity
+      format: .1f
+    - id: avg_danceability
+      field: danceability
+      aggregation: mean
+      label: Avg Danceability
+      format: .3f
+    - id: avg_energy
+      field: energy
+      aggregation: mean
+      label: Avg Energy
+      format: .3f
+    layout:
+      type: grid
+      components:
+      - id: audio_feature_summary
+        type: visualization
+        title: Audio Feature Statistics by Genre
+        width: full
+        visualization:
+          chart_type: summary
+          params:
+            columns:
+            - popularity
+            - danceability
+            - energy
+            - loudness
+            - tempo
+            - valence
+            - acousticness
+            by: track_genre
+            percentiles:
+            - 25
+            - 50
+            - 75
+            - 90
+      - id: popularity_histogram
+        type: visualization
+        title: Track Popularity Distribution
+        width: full
+        visualization:
+          chart_type: histogram
+          roles:
+            x: popularity
+            by: explicit
+          params:
+            bins: 50
+            limit: 20000
+      - id: popularity_ecdf
+        type: visualization
+        title: Cumulative Popularity Distribution
+        width: full
+        visualization:
+          chart_type: ecdf
+          roles:
+            x: popularity
+            by: explicit
+      - id: danceability_violin
+        type: visualization
+        title: Danceability by Genre
+        width: full
+        visualization:
+          chart_type: violin
+          roles:
+            y: danceability
+            by: track_genre
+          params:
+            inner: box
+            limit: 30000
+      - id: energy_violin
+        type: visualization
+        title: Energy Levels by Genre
+        width: full
+        visualization:
+          chart_type: violin
+          roles:
+            y: energy
+            by: track_genre
+          params:
+            inner: box
+            limit: 30000
+  - id: audio_features
+    title: Audio Feature Analysis
+    description: Explore relationships between musical characteristics
+    layout:
+      type: grid
+      components:
+      - id: dance_energy_scatter
+        type: visualization
+        title: Danceability vs Energy
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: danceability
+            y: energy
+            color: track_genre
+            size: popularity
+          params:
+            trendline: ols
+            alpha: 0.5
+            limit: 10000
+      - id: dance_energy_hexbin
+        type: visualization
+        title: Danceability vs Energy Density
+        width: full
+        visualization:
+          chart_type: hexbin
+          roles:
+            x: danceability
+            y: energy
+          params:
+            bins: 50
+            limit: 50000
+      - id: valence_energy_scatter
+        type: visualization
+        title: Valence (Mood) vs Energy
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: valence
+            y: energy
+            color: track_genre
+          params:
+            alpha: 0.4
+            trendline: ols
+            limit: 10000
+      - id: acoustic_energy_kde2d
+        type: visualization
+        title: Acousticness vs Energy Distribution
+        width: full
+        visualization:
+          chart_type: kde2d
+          roles:
+            x: acousticness
+            y: energy
+          params:
+            limit: 20000
+      - id: loudness_energy_scatter
+        type: visualization
+        title: Loudness vs Energy
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: loudness
+            y: energy
+            color: explicit
+          params:
+            alpha: 0.4
+            limit: 10000
+      - id: tempo_kde
+        type: visualization
+        title: Tempo Distribution (BPM)
+        width: full
+        visualization:
+          chart_type: kde
+          roles:
+            x: tempo
+            by: track_genre
+          params:
+            limit: 30000
+  - id: popularity_analysis
+    title: Popularity Insights
+    description: What makes a track popular? Feature correlations with success
+    layout:
+      type: grid
+      components:
+      - id: feature_correlation
+        type: visualization
+        title: Audio Feature Correlation Matrix
+        width: full
+        visualization:
+          chart_type: corr_heatmap
+          params:
+            columns:
+            - popularity
+            - danceability
+            - energy
+            - loudness
+            - speechiness
+            - acousticness
+            - instrumentalness
+            - liveness
+            - valence
+            - tempo
+            method: pearson
+            mask_upper: true
+      - id: dance_popularity_scatter
+        type: visualization
+        title: Danceability vs Popularity
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: danceability
+            y: popularity
+            color: track_genre
+          params:
+            alpha: 0.5
+            trendline: ols
+            limit: 10000
+      - id: energy_popularity_scatter
+        type: visualization
+        title: Energy vs Popularity
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: energy
+            y: popularity
+            color: track_genre
+          params:
+            alpha: 0.5
+            trendline: ols
+            limit: 10000
+      - id: loudness_popularity_hexbin
+        type: visualization
+        title: Loudness vs Popularity Density
+        width: full
+        visualization:
+          chart_type: hexbin
+          roles:
+            x: loudness
+            y: popularity
+          params:
+            bins: 40
+            limit: 50000
+      - id: valence_popularity_scatter
+        type: visualization
+        title: Valence (Positivity) vs Popularity
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: valence
+            y: popularity
+            color: track_genre
+          params:
+            alpha: 0.5
+            limit: 10000
+  - id: genre_comparison
+    title: Genre Characteristics
+    description: Compare audio features across different music genres
+    layout:
+      type: grid
+      components:
+      - id: genre_danceability_box
+        type: visualization
+        title: Danceability Across Genres
+        width: full
+        visualization:
+          chart_type: boxplot
+          roles:
+            y: danceability
+            by: track_genre
+          params:
+            limit: 30000
+      - id: genre_energy_box
+        type: visualization
+        title: Energy Levels Across Genres
+        width: full
+        visualization:
+          chart_type: boxplot
+          roles:
+            y: energy
+            by: track_genre
+          params:
+            limit: 30000
+      - id: valence_ecdf
+        type: visualization
+        title: Valence (Mood) Cumulative Distribution
+        width: full
+        visualization:
+          chart_type: ecdf
+          roles:
+            x: valence
+            by: track_genre
+          params:
+            limit: 30000
+      - id: acousticness_kde
+        type: visualization
+        title: Acousticness Distribution by Genre
+        width: full
+        visualization:
+          chart_type: kde
+          roles:
+            x: acousticness
+            by: track_genre
+          params:
+            limit: 30000
+      - id: genre_distribution
+        type: visualization
+        title: Track Distribution by Genre
+        width: third
+        visualization:
+          chart_type: pie
+          roles:
+            x: track_genre
+          params:
+            limit: 10000
+  - id: track_details
+    title: Track Explorer
+    description: Browse and explore individual track details
+    layout:
+      type: grid
+      components:
+      - id: popular_tracks_table
+        type: visualization
+        title: Most Popular Tracks
+        width: full
+        visualization:
+          chart_type: table
+          params:
+            columns:
+            - track_name
+            - artists
+            - popularity
+            - danceability
+            - energy
+            - valence
+            - tempo
+            - track_genre
+            limit: 100
+          sort:
+            field: popularity
+            order: desc
+      - id: high_energy_table
+        type: visualization
+        title: High Energy Tracks
+        width: full
+        visualization:
+          chart_type: table
+          params:
+            columns:
+            - track_name
+            - artists
+            - energy
+            - loudness
+            - tempo
+            - danceability
+            - popularity
+            - track_genre
+            limit: 50
+          sort:
+            field: energy
+            order: desc
+      - id: danceable_table
+        type: visualization
+        title: Most Danceable Tracks
+        width: full
+        visualization:
+          chart_type: table
+          params:
+            columns:
+            - track_name
+            - artists
+            - danceability
+            - tempo
+            - valence
+            - energy
+            - popularity
+            - track_genre
+            limit: 50
+          sort:
+            field: danceability
+            order: desc

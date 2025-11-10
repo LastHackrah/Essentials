@@ -1,0 +1,348 @@
+dsl_version: 1.3.0
+dashboard:
+  id: us_traffic_accidents
+  title: US Traffic Accidents Analysis (2016-2023)
+  description: 'Explore 7.7M+ traffic accidents across the United States: severity patterns, weather conditions, and geographic hotspots'
+  metadata:
+    dataset_name: US Accidents
+    source: Sobhan Moosavi et al.
+    rows: 7728394
+    description: Countrywide traffic accident dataset covering 49 states with weather and road condition data
+    use_cases:
+    - Identify high-risk areas and times
+    - Analyze weather impact on accidents
+    - Predict accident severity
+    - Optimize traffic safety measures
+    currency: USD
+    narrative: 'The US Accidents contains 7,728,394 records from Sobhan Moosavi et al..
+
+      Countrywide traffic accident dataset covering 49 states with weather and road condition data
+
+
+      This dataset enables comprehensive analysis of key patterns and trends.
+
+      The dashboard provides interactive visualizations and metrics for data exploration,
+
+      allowing users to filter, aggregate, and discover insights across multiple dimensions.'
+  data_source:
+    type: parquet
+    path: data/processed/us_accidents.parquet
+    schema:
+      severity: integer
+      start_lat: float
+      start_lng: float
+      temperaturef: float
+      distancemi: float
+    default_formatting:
+      type: number
+      precision: 2
+      use_thousands_separator: true
+    formatting:
+      severity:
+        type: integer
+    column_labels:
+      severity: Severity
+      start_lat: Start Lat
+      start_lng: Start Lng
+      temperaturef: Temperaturef
+      distancemi: Distancemi
+    data_quality:
+      missing_values:
+        strategy: auto
+        rules: []
+      duplicates:
+        enabled: false
+      outliers:
+        enabled: true
+        rules:
+        - fields:
+          - severity
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - start_lat
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - start_lng
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - temperaturef
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - distancemi
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+      validation:
+        rules: []
+      reporting:
+        log_level: info
+        show_summary: true
+        show_details: false
+  pages:
+  - id: overview
+    title: Accident Overview
+    description: High-level accident statistics and severity distribution
+    filters:
+    - id: severity_filter
+      field: severity
+      type: multiselect
+      label: Severity Level
+      default:
+      - 1
+      - 2
+      - 3
+      - 4
+    - id: state_filter
+      field: state
+      type: multiselect
+      label: State
+      default:
+      - CA
+      - TX
+      - FL
+      - NY
+    metrics:
+    - id: total_accidents
+      field: id
+      aggregation: count
+      label: Total Accidents
+      format: ',.0f'
+    - id: avg_severity
+      field: severity
+      aggregation: mean
+      label: Avg Severity
+      format: .2f
+    - id: avg_distance
+      field: distancemi
+      aggregation: mean
+      label: Avg Impact Distance
+      format: .2f mi
+    layout:
+      type: grid
+      components:
+      - id: accident_summary
+        type: visualization
+        title: Accident Statistics by Severity
+        width: full
+        visualization:
+          chart_type: summary
+          params:
+            columns:
+            - distancemi
+            - temperaturef
+            - humidity
+            - visibilitymi
+            - wind_speedmph
+            by: severity
+            percentiles:
+            - 25
+            - 50
+            - 75
+            - 90
+      - id: severity_distribution
+        type: visualization
+        title: Severity Distribution
+        width: third
+        visualization:
+          chart_type: pie
+          roles:
+            x: severity
+          params:
+            limit: 100000
+      - id: severity_histogram
+        type: visualization
+        title: Distance Impact by Severity
+        width: full
+        visualization:
+          chart_type: histogram
+          roles:
+            x: distancemi
+            by: severity
+          params:
+            bins: 40
+            log_x: true
+            limit: 100000
+      - id: distance_ecdf
+        type: visualization
+        title: Impact Distance Cumulative Distribution
+        width: full
+        visualization:
+          chart_type: ecdf
+          roles:
+            x: distancemi
+            by: severity
+          params:
+            log_x: true
+            limit: 100000
+  - id: weather_impact
+    title: Weather Impact
+    description: Analyze how weather conditions affect accident severity
+    layout:
+      type: grid
+      components:
+      - id: temp_severity_scatter
+        type: visualization
+        title: Temperature vs Severity
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: temperaturef
+            y: severity
+            color: severity
+          params:
+            alpha: 0.3
+            limit: 20000
+      - id: temp_distribution
+        type: visualization
+        title: Temperature Distribution by Severity
+        width: full
+        visualization:
+          chart_type: violin
+          roles:
+            y: temperaturef
+            by: severity
+          params:
+            inner: box
+            limit: 50000
+      - id: visibility_severity
+        type: visualization
+        title: Visibility vs Severity
+        width: full
+        visualization:
+          chart_type: boxplot
+          roles:
+            y: visibilitymi
+            by: severity
+          params:
+            limit: 50000
+      - id: humidity_kde
+        type: visualization
+        title: Humidity Distribution by Severity
+        width: full
+        visualization:
+          chart_type: kde
+          roles:
+            x: humidity
+            by: severity
+          params:
+            limit: 50000
+      - id: weather_correlation
+        type: visualization
+        title: Weather Factor Correlations
+        width: full
+        visualization:
+          chart_type: corr_heatmap
+          params:
+            columns:
+            - severity
+            - temperaturef
+            - humidity
+            - pressurein
+            - visibilitymi
+            - wind_speedmph
+            - precipitationin
+            method: spearman
+            mask_upper: true
+  - id: geographic
+    title: Geographic Patterns
+    description: State and location-based accident analysis
+    layout:
+      type: grid
+      components:
+      - id: state_distribution
+        type: visualization
+        title: Accidents by State
+        width: third
+        visualization:
+          chart_type: pie
+          roles:
+            x: state
+          params:
+            limit: 100000
+      - id: severity_by_state
+        type: visualization
+        title: Severity Distribution by State
+        width: full
+        visualization:
+          chart_type: boxplot
+          roles:
+            y: severity
+            by: state
+          params:
+            limit: 100000
+      - id: state_summary
+        type: visualization
+        title: State-Level Accident Summary
+        width: full
+        visualization:
+          chart_type: summary
+          params:
+            columns:
+            - severity
+            - distancemi
+            - temperaturef
+            - visibilitymi
+            by: state
+            percentiles:
+            - 50
+            - 75
+            - 90
+  - id: high_severity
+    title: High Severity Analysis
+    description: Focus on severe accidents (Level 3-4)
+    layout:
+      type: grid
+      components:
+      - id: severe_accidents_table
+        type: visualization
+        title: High Severity Accidents
+        width: full
+        visualization:
+          chart_type: table
+          params:
+            columns:
+            - state
+            - city
+            - severity
+            - distancemi
+            - temperaturef
+            - weather_condition
+            - sunrise_sunset
+            limit: 100
+          sort:
+            field: severity
+            order: desc
+      - id: weather_condition_dist
+        type: visualization
+        title: Weather Conditions (High Severity)
+        width: full
+        visualization:
+          chart_type: pie
+          roles:
+            x: weather_condition
+          params:
+            limit: 10000
+      - id: time_of_day_dist
+        type: visualization
+        title: Time of Day Distribution
+        width: full
+        visualization:
+          chart_type: pie
+          roles:
+            x: sunrise_sunset
+          params:
+            limit: 100000

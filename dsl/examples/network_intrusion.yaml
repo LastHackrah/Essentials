@@ -1,0 +1,384 @@
+dsl_version: 1.3.0
+dashboard:
+  id: network_intrusion
+  title: Network Intrusion Detection Analytics
+  description: 'Cybersecurity threat detection: analyze network traffic patterns and identify malicious activity'
+  metadata:
+    dataset_name: Network Intrusion Detection
+    source: KDD Cup 1999
+    rows: 47679
+    description: Network connection data with 41 features for intrusion detection
+    use_cases:
+    - Detect network intrusions
+    - Classify attack types
+    - Identify traffic anomalies
+    - Monitor security metrics
+    currency: USD
+    narrative: 'The Network Intrusion Detection contains 47,679 records from KDD Cup 1999.
+
+      Network connection data with 41 features for intrusion detection
+
+
+      This dataset enables comprehensive analysis of key patterns and trends.
+
+      The dashboard provides interactive visualizations and metrics for data exploration,
+
+      allowing users to filter, aggregate, and discover insights across multiple dimensions.'
+  data_source:
+    type: parquet
+    path: data/processed/network_intrusion_Train_data.parquet
+    schema:
+      duration: integer
+      src_bytes: integer
+      dst_bytes: integer
+      logged_in: integer
+      count: integer
+    default_formatting:
+      type: integer
+      use_thousands_separator: true
+    formatting:
+      srv_count:
+        type: number
+        precision: 2
+      serror_rate:
+        type: number
+        precision: 3
+        use_thousands_separator: false
+      rerror_rate:
+        type: number
+        precision: 3
+        use_thousands_separator: false
+    column_labels:
+      duration: Duration
+      src_bytes: Src Bytes
+      dst_bytes: Dst Bytes
+      logged_in: Logged In
+      count: Count
+      srv_count: Srv Count
+      serror_rate: SError Rate
+      rerror_rate: RError Rate
+    data_quality:
+      missing_values:
+        strategy: auto
+        rules: []
+      duplicates:
+        enabled: false
+      outliers:
+        enabled: true
+        rules:
+        - fields:
+          - duration
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - src_bytes
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - dst_bytes
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - logged_in
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - count
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+      validation:
+        rules: []
+      reporting:
+        log_level: info
+        show_summary: true
+        show_details: false
+  pages:
+  - id: overview
+    title: Network Overview
+    description: Connection statistics and traffic patterns
+    filters:
+    - id: protocol_filter
+      field: protocol_type
+      type: multiselect
+      label: Protocol Type
+      default:
+      - tcp
+      - udp
+      - icmp
+    - id: service_filter
+      field: service
+      type: multiselect
+      label: Service
+      default:
+      - http
+      - ftp
+      - smtp
+      - telnet
+    metrics:
+    - id: total_connections
+      field: duration
+      aggregation: count
+      label: Total Connections
+      format: ',.0f'
+    - id: avg_duration
+      field: duration
+      aggregation: mean
+      label: Avg Duration (s)
+      format: .2f
+    - id: avg_src_bytes
+      field: src_bytes
+      aggregation: mean
+      label: Avg Src Bytes
+      format: ',.0f'
+    - id: avg_dst_bytes
+      field: dst_bytes
+      aggregation: mean
+      label: Avg Dst Bytes
+      format: ',.0f'
+    layout:
+      type: grid
+      components:
+      - id: connection_summary
+        type: visualization
+        title: Connection Statistics Summary
+        width: full
+        visualization:
+          chart_type: summary
+          params:
+            columns:
+            - duration
+            - src_bytes
+            - dst_bytes
+            - count
+            - srv_count
+            - serror_rate
+            - rerror_rate
+            percentiles:
+            - 25
+            - 50
+            - 75
+            - 90
+            - 95
+            - 99
+      - id: protocol_distribution
+        type: visualization
+        title: Protocol Distribution
+        width: third
+        visualization:
+          chart_type: pie
+          roles:
+            x: protocol_type
+      - id: duration_histogram
+        type: visualization
+        title: Connection Duration Distribution
+        width: full
+        visualization:
+          chart_type: histogram
+          roles:
+            x: duration
+            by: protocol_type
+          params:
+            bins: 50
+            log_x: true
+      - id: duration_ecdf
+        type: visualization
+        title: Duration Cumulative Distribution
+        width: full
+        visualization:
+          chart_type: ecdf
+          roles:
+            x: duration
+            by: protocol_type
+          params:
+            log_x: true
+  - id: traffic_analysis
+    title: Traffic Analysis
+    description: Byte transfer patterns and data flow
+    layout:
+      type: grid
+      components:
+      - id: src_dst_scatter
+        type: visualization
+        title: Source vs Destination Bytes
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: src_bytes
+            y: dst_bytes
+            color: protocol_type
+          params:
+            alpha: 0.5
+            log_x: true
+            log_y: true
+            limit: 10000
+      - id: src_dst_hexbin
+        type: visualization
+        title: Traffic Density Map
+        width: full
+        visualization:
+          chart_type: hexbin
+          roles:
+            x: src_bytes
+            y: dst_bytes
+          params:
+            bins: 40
+            log_x: true
+            log_y: true
+      - id: src_bytes_violin
+        type: visualization
+        title: Source Bytes by Protocol
+        width: full
+        visualization:
+          chart_type: violin
+          roles:
+            y: src_bytes
+            by: protocol_type
+          params:
+            inner: box
+            log_y: true
+      - id: dst_bytes_violin
+        type: visualization
+        title: Destination Bytes by Protocol
+        width: full
+        visualization:
+          chart_type: violin
+          roles:
+            y: dst_bytes
+            by: protocol_type
+          params:
+            inner: box
+            log_y: true
+  - id: error_analysis
+    title: Error Analysis
+    description: Connection errors and anomalies
+    layout:
+      type: grid
+      components:
+      - id: serror_distribution
+        type: visualization
+        title: SYN Error Rate Distribution
+        width: full
+        visualization:
+          chart_type: histogram
+          roles:
+            x: serror_rate
+            by: protocol_type
+          params:
+            bins: 40
+      - id: rerror_distribution
+        type: visualization
+        title: REJ Error Rate Distribution
+        width: full
+        visualization:
+          chart_type: histogram
+          roles:
+            x: rerror_rate
+            by: protocol_type
+          params:
+            bins: 40
+      - id: error_correlation
+        type: visualization
+        title: Error Rate Correlation
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: serror_rate
+            y: rerror_rate
+            color: protocol_type
+          params:
+            alpha: 0.5
+            limit: 10000
+      - id: network_correlations
+        type: visualization
+        title: Network Metrics Correlation Matrix
+        width: full
+        visualization:
+          chart_type: corr_heatmap
+          params:
+            columns:
+            - duration
+            - src_bytes
+            - dst_bytes
+            - count
+            - srv_count
+            - serror_rate
+            - rerror_rate
+            - same_srv_rate
+            - diff_srv_rate
+            method: spearman
+            mask_upper: true
+  - id: connection_details
+    title: Connection Details
+    description: Detailed connection records and patterns
+    layout:
+      type: grid
+      components:
+      - id: service_distribution
+        type: visualization
+        title: Service Distribution
+        width: third
+        visualization:
+          chart_type: pie
+          roles:
+            x: service
+          params:
+            limit: 10000
+      - id: flag_distribution
+        type: visualization
+        title: Connection Flag Distribution
+        width: third
+        visualization:
+          chart_type: pie
+          roles:
+            x: flag
+      - id: high_traffic_connections
+        type: visualization
+        title: High Traffic Connections
+        width: full
+        visualization:
+          chart_type: table
+          params:
+            columns:
+            - protocol_type
+            - service
+            - src_bytes
+            - dst_bytes
+            - duration
+            - count
+            - serror_rate
+            - rerror_rate
+            limit: 100
+          sort:
+            field: src_bytes
+            order: desc
+      - id: anomalous_connections
+        type: visualization
+        title: High Error Rate Connections
+        width: full
+        visualization:
+          chart_type: table
+          params:
+            columns:
+            - protocol_type
+            - service
+            - serror_rate
+            - rerror_rate
+            - src_bytes
+            - dst_bytes
+            - duration
+            limit: 50
+          sort:
+            field: serror_rate
+            order: desc

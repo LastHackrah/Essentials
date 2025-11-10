@@ -1,0 +1,30 @@
+# Failing DashSpec Example
+# This spec contains multiple validation errors for testing
+
+dsl_version: "2.5.0"  # ERROR: INVALID_VERSION (unsupported version)
+
+dashboard:
+  data_source:
+    path: "invalid/path/data.csv"  # ERROR: INVALID_PATH (wrong format)
+    type: "parquet"
+  id: "failing_dashboard"
+  pages:
+    - id: "page1"
+      layout:
+        components:
+          - id: "viz1"
+            type: "visualization"
+            visualization:
+              chart_type: "line"
+              x_field: "nonexistent_field"  # ERROR: UNKNOWN_FIELD
+              y_field: "another_missing_field"  # ERROR: UNKNOWN_FIELD
+          - id: "viz1"  # ERROR: DUPLICATE_ID (same as above)
+            metric_id: "missing_metric"  # ERROR: INVALID_REFERENCE
+            type: "metric_card"
+        type: "grid"
+      metrics:
+        - aggregation: "sum"
+          field: "categorical_field"  # ERROR: INVALID_AGGREGATION (sum on categorical)
+          id: "metric1"
+      title: "Page 1"
+  title: "Failing Dashboard"

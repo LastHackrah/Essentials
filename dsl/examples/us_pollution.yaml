@@ -1,0 +1,417 @@
+dsl_version: 1.3.0
+dashboard:
+  id: us_pollution_analysis
+  title: US Air Quality & Pollution Analysis (2000-2016)
+  description: Interactive dashboard for analyzing air pollution trends, AQI metrics, and pollutant distributions across US states and cities
+  metadata:
+    dataset_name: US Pollution Data
+    source: EPA Air Quality System
+    rows: 1746661
+    description: Air pollution measurements across 47 US states covering NO2, O3, SO2, and CO levels (2000-2016)
+    use_cases:
+    - Monitor air quality trends
+    - Identify high-pollution areas
+    - Analyze seasonal patterns
+    - Track regulatory compliance
+    currency: USD
+    narrative: 'The US Pollution Data contains 1,746,661 records from EPA Air Quality System.
+
+      Air pollution measurements across 47 US states covering NO2, O3, SO2, and CO levels (2000-2016)
+
+
+      This dataset enables comprehensive analysis of key patterns and trends.
+
+      The dashboard provides interactive visualizations and metrics for data exploration,
+
+      allowing users to filter, aggregate, and discover insights across multiple dimensions.'
+  data_source:
+    type: parquet
+    path: data/processed/us_pollution.parquet
+    schema:
+      no2_mean: float
+      o3_mean: float
+      so2_mean: float
+      co_mean: float
+      no2_aqi: float
+      o3_aqi: float
+    default_formatting:
+      type: number
+      precision: 2
+      use_thousands_separator: true
+    column_labels:
+      no2_mean: No2 Mean
+      o3_mean: O3 Mean
+      so2_mean: So2 Mean
+      co_mean: Co Mean
+      no2_aqi: No2 AQI
+      o3_aqi: O3 AQI
+    data_quality:
+      missing_values:
+        strategy: auto
+        rules: []
+      duplicates:
+        enabled: false
+      outliers:
+        enabled: true
+        rules:
+        - fields:
+          - no2_mean
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - o3_mean
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - so2_mean
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - co_mean
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - no2_aqi
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+        - fields:
+          - o3_aqi
+          method: percentile
+          lower: 0.1
+          upper: 99.9
+          action: cap
+      validation:
+        rules: []
+      reporting:
+        log_level: info
+        show_summary: true
+        show_details: false
+  pages:
+  - id: overview
+    title: Air Quality Overview
+    description: Key air quality metrics and pollutant level summaries
+    filters:
+    - id: state_filter
+      field: state
+      type: multiselect
+      label: Select States
+      default:
+      - California
+      - Texas
+      - New York
+      - Arizona
+    - id: no2_aqi_filter
+      field: no2_aqi
+      type: range
+      label: NO2 AQI Range
+      default:
+      - 0
+      - 100
+    metrics:
+    - id: total_measurements
+      field: state
+      aggregation: count
+      label: Total Measurements
+      format: ',.0f'
+    - id: avg_no2_aqi
+      field: no2_aqi
+      aggregation: mean
+      label: Avg NO2 AQI
+      format: .1f
+    - id: avg_o3_aqi
+      field: o3_aqi
+      aggregation: mean
+      label: Avg O3 AQI
+      format: .1f
+    - id: avg_co
+      field: co_mean
+      aggregation: mean
+      label: Avg CO Level
+      format: .3f
+    layout:
+      type: grid
+      components:
+      - id: pollutant_summary
+        type: visualization
+        title: Pollutant Statistics by State
+        width: full
+        visualization:
+          chart_type: summary
+          params:
+            columns:
+            - no2_mean
+            - o3_mean
+            - so2_mean
+            - co_mean
+            - no2_aqi
+            - o3_aqi
+            by: state
+            percentiles:
+            - 25
+            - 50
+            - 75
+            - 90
+            - 95
+      - id: no2_aqi_histogram
+        type: visualization
+        title: NO2 Air Quality Index Distribution
+        width: full
+        visualization:
+          chart_type: histogram
+          roles:
+            x: no2_aqi
+            by: state
+          params:
+            bins: 40
+            limit: 50000
+      - id: o3_aqi_histogram
+        type: visualization
+        title: O3 (Ozone) Air Quality Index Distribution
+        width: full
+        visualization:
+          chart_type: histogram
+          roles:
+            x: o3_aqi
+            by: state
+          params:
+            bins: 40
+            limit: 50000
+      - id: no2_o3_scatter
+        type: visualization
+        title: NO2 vs O3 Correlation
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: no2_mean
+            y: o3_mean
+            color: state
+          params:
+            trendline: ols
+            alpha: 0.4
+            limit: 20000
+      - id: no2_o3_hexbin
+        type: visualization
+        title: NO2 vs O3 Density Heatmap
+        width: full
+        visualization:
+          chart_type: hexbin
+          roles:
+            x: no2_mean
+            y: o3_mean
+          params:
+            bins: 50
+            limit: 100000
+  - id: pollutant_analysis
+    title: Pollutant Analysis
+    description: Detailed analysis of individual pollutants and their distributions
+    layout:
+      type: grid
+      components:
+      - id: no2_violin
+        type: visualization
+        title: NO2 Distribution by State
+        width: full
+        visualization:
+          chart_type: violin
+          roles:
+            y: no2_mean
+            by: state
+          params:
+            inner: box
+            limit: 50000
+      - id: o3_violin
+        type: visualization
+        title: O3 Distribution by State
+        width: full
+        visualization:
+          chart_type: violin
+          roles:
+            y: o3_mean
+            by: state
+          params:
+            inner: box
+            limit: 50000
+      - id: no2_ecdf
+        type: visualization
+        title: NO2 Cumulative Distribution
+        width: full
+        visualization:
+          chart_type: ecdf
+          roles:
+            x: no2_mean
+            by: state
+          params:
+            limit: 50000
+      - id: co_boxplot
+        type: visualization
+        title: CO Levels by State
+        width: full
+        visualization:
+          chart_type: boxplot
+          roles:
+            y: co_mean
+            by: state
+          params:
+            limit: 50000
+      - id: so2_kde
+        type: visualization
+        title: SO2 Kernel Density Estimate
+        width: full
+        visualization:
+          chart_type: kde
+          roles:
+            x: so2_mean
+            by: state
+          params:
+            limit: 50000
+      - id: aqi_comparison
+        type: visualization
+        title: AQI Comparison (NO2 vs O3)
+        width: full
+        visualization:
+          chart_type: boxplot
+          roles:
+            y: no2_aqi
+            by: state
+          params:
+            limit: 50000
+  - id: correlations
+    title: Pollutant Correlations
+    description: Explore relationships between different pollutants
+    layout:
+      type: grid
+      components:
+      - id: pollutant_correlation
+        type: visualization
+        title: Pollutant Correlation Matrix
+        width: full
+        visualization:
+          chart_type: corr_heatmap
+          params:
+            columns:
+            - no2_mean
+            - no2_aqi
+            - o3_mean
+            - o3_aqi
+            - so2_mean
+            - so2_aqi
+            - co_mean
+            - co_aqi
+            method: pearson
+            mask_upper: true
+      - id: no2_co_scatter
+        type: visualization
+        title: NO2 vs CO Levels
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: no2_mean
+            y: co_mean
+            color: state
+          params:
+            alpha: 0.5
+            trendline: ols
+            limit: 20000
+      - id: so2_o3_kde2d
+        type: visualization
+        title: SO2 vs O3 2D Kernel Density
+        width: full
+        visualization:
+          chart_type: kde2d
+          roles:
+            x: so2_mean
+            y: o3_mean
+          params:
+            limit: 30000
+      - id: no2_so2_hexbin
+        type: visualization
+        title: NO2 vs SO2 Density
+        width: full
+        visualization:
+          chart_type: hexbin
+          roles:
+            x: no2_mean
+            y: so2_mean
+          params:
+            bins: 40
+            limit: 50000
+      - id: aqi_scatter
+        type: visualization
+        title: NO2 AQI vs O3 AQI
+        width: full
+        visualization:
+          chart_type: scatter
+          roles:
+            x: no2_aqi
+            y: o3_aqi
+            color: state
+          params:
+            alpha: 0.4
+            limit: 20000
+  - id: geographic
+    title: Geographic Patterns
+    description: State and city-level pollution analysis
+    layout:
+      type: grid
+      components:
+      - id: state_distribution
+        type: visualization
+        title: Measurement Distribution by State
+        width: third
+        visualization:
+          chart_type: pie
+          roles:
+            x: state
+          params:
+            limit: 10000
+      - id: city_pollution_table
+        type: visualization
+        title: High Pollution Cities
+        width: full
+        visualization:
+          chart_type: table
+          params:
+            columns:
+            - state
+            - city
+            - no2_mean
+            - o3_mean
+            - so2_mean
+            - co_mean
+            - no2_aqi
+            - o3_aqi
+            limit: 100
+          sort:
+            field: no2_aqi
+            order: desc
+      - id: state_summary
+        type: visualization
+        title: State-Level Air Quality Summary
+        width: full
+        visualization:
+          chart_type: summary
+          params:
+            columns:
+            - no2_mean
+            - o3_mean
+            - co_mean
+            - no2_aqi
+            - o3_aqi
+            by: state
+            percentiles:
+            - 50
+            - 75
+            - 90
+            - 95
